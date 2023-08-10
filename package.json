@@ -7,6 +7,9 @@
     "dist",
     "src"
   ],
+  "bin": {
+    "cookie-cloud": "bin/index.js"
+  },
   "engines": {
     "node": ">=10"
   },
@@ -47,6 +50,8 @@
   "devDependencies": {
     "@size-limit/preset-small-lib": "^8.2.6",
     "@types/crypto-js": "^4.1.1",
+    "@types/fs-extra": "^11.0.1",
+    "@types/lodash": "^4.14.196",
     "husky": "^8.0.3",
     "size-limit": "^8.2.6",
     "tsdx": "^0.14.1",
@@ -55,6 +60,9 @@
   },
   "dependencies": {
     "axios": "^1.4.0",
-    "crypto-js": "^4.1.1"
-  }
+    "crypto-js": "^4.1.1",
+    "fs-extra": "^11.1.1",
+    "lodash": "^4.17.21"
+  },
+  "repository": "https://github.com/chenpx976/cookie-cloud.git"
 }
