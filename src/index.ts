@@ -35,7 +35,7 @@ interface DecryptedData {
   local_storage_data: string;
 }
 
-class CookieManager {
+export class CookieManager {
   private config: Payload = {
     refreshInterval: 1000 * 60 * 10,
     endpoint: 'http://127.0.0.1:8088',
@@ -119,6 +119,16 @@ class CookieManager {
       })
       .join('; ');
     return { cookie_data_str, cookie_data };
+  }
+
+  // 根据 name 去 cookie_data_str 拿到对应的值, 需要解析 cookie_data_str 通过正则来匹配
+  getCookieByName(cookie_data_str: string, name: string): string {
+    const reg = new RegExp(`${name}=([^;]+)`);
+    const match = cookie_data_str.match(reg);
+    if (match) {
+      return match[1];
+    }
+    return '';
   }
 
   private async cookieDecrypt(
