@@ -1,54 +1,110 @@
 import axios from 'axios';
 import * as CryptoJS from 'crypto-js';
 import * as _ from 'lodash';
+import ConfigManger from 'dot-config-next';
+
 interface Payload {
-  uuid: string;
-  password: string;
+  uuid?: string;
+  password?: string;
   endpoint?: string;
+  // 自动刷新 cookie 的时间间隔
+  refreshInterval?: number;
+  cookie_data?: CookiesData;
+  lastUpdateTime?: number;
 }
+type Cookie = {
+  name: string;
+  value: string;
+  domain: string;
+  path: string;
+  expires: number;
+  size: number;
+  httpOnly: boolean;
+  secure: boolean;
+  session: boolean;
+  sameSite: 'no_restriction' | 'strict' | 'lax' | 'none'; // You can add more possible values if there are other 'sameSite' values
+  storeId: string;
+  id: number;
+};
+
+type CookiesData = {
+  [key: string]: Cookie[];
+};
 
 interface DecryptedData {
-  cookie_data: string;
+  cookie_data: CookiesData;
   local_storage_data: string;
 }
 
 class CookieManager {
-  private payload: Payload;
-
+  private configManager?: ConfigManger;
+  private get config(): Payload {
+    return {
+      refreshInterval: 1000 * 60 * 10,
+      endpoint: 'http://127.0.0.1:8088',
+      ...(this.configManager?.readConfig() || {}),
+    };
+  }
   constructor(payload: Payload) {
-    if (!payload.uuid) {
+    const configManager = new ConfigManger('cookie-cloud', {
+      uuid: '',
+      refreshInterval: 1000 * 60 * 10,
+      cookie_data: {},
+      lastUpdateTime: 0,
+    });
+    this.configManager = configManager;
+    this.configManager.updateConfig(payload);
+    if (!this.config?.uuid) {
       throw Error('uuid is required');
     }
-    this.payload = payload;
   }
 
-  async getCookes(domain = ''): Promise<any> {
+  async downloadCookie(refresh = true): Promise<DecryptedData> {
+    const {
+      uuid = '',
+      password = '',
+      endpoint = 'http://127.0.0.1:8088',
+      cookie_data,
+      refreshInterval,
+      lastUpdateTime = 0,
+    } = this.config;
+    // 如果 refresh 为 false, 从本地读取 cookie, 并且判断是否过期
+    if (!refresh && refreshInterval && cookie_data) {
+      const now = new Date().getTime();
+      if (now - lastUpdateTime < refreshInterval) {
+        console.log('从本地读取 cookie');
+        return { cookie_data, local_storage_data: '' };
+      }
+    }
+
+    const formattedEndpoint =
+      endpoint.trim().replace(/\/+$/, '') + '/get/' + uuid;
+
+    const requestOptions: any = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      responseType: 'json', // Or "text" if the response is not JSON.
+    };
+
+    const response = await axios(formattedEndpoint, requestOptions);
+
+    const encrypted = response.data.encrypted;
+    const decrypted = await this.cookieDecrypt(uuid, encrypted, password);
+    // 更新 cookie_data
+    this.configManager?.updateConfig({
+      cookie_data: decrypted.cookie_data,
+      lastUpdateTime: new Date().getTime(),
+    });
+    return decrypted;
+  }
+
+  async getCookes(domain = '', refresh = true): Promise<any> {
     if (!domain) {
       throw Error('domain is required');
     }
-    const { cookie_data }: any = await this.downloadCookie();
-    /**
-{
-  "cookie_data": {
-    "alipay.com": [
-      {
-        "name": "x5sec",
-        "value": "7b22617365727665723b32223a223233333b7d",
-        "domain": ".xxxx.com",
-        "path": "/",
-        "expires": 1630848000,
-        "size": 23,
-        "httpOnly": false,
-        "secure": false,
-        "session": false,
-        "sameSite": "no_restriction",
-        "storeId": "0",
-        "id": 1
-      },
-    ],
-  },
-}
-     */
+    const { cookie_data }: any = await this.downloadCookie(refresh);
     // 处理 cookie_data 数据, 生成 cookie 字符串, 用于设置 cookie
     const cookie_data_str = Object.keys(cookie_data)
       .map((domainKey): string => {
@@ -74,26 +130,6 @@ class CookieManager {
       })
       .join('; ');
     return { cookie_data_str, cookie_data };
-  }
-
-  async downloadCookie(): Promise<DecryptedData> {
-    const { uuid, password, endpoint = 'http://127.0.0.1:8088' } = this.payload;
-    const formattedEndpoint =
-      endpoint.trim().replace(/\/+$/, '') + '/get/' + uuid;
-
-    const requestOptions: any = {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      responseType: 'json', // Or "text" if the response is not JSON.
-    };
-
-    const response = await axios(formattedEndpoint, requestOptions);
-
-    const encrypted = response.data.encrypted;
-    const decrypted = await this.cookieDecrypt(uuid, encrypted, password);
-    return decrypted;
   }
 
   private async cookieDecrypt(

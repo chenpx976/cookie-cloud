@@ -15,6 +15,7 @@
   },
   "scripts": {
     "start": "tsdx watch",
+    "dev": "tsdx watch",
     "build": "tsdx build",
     "test": "tsdx test",
     "lint": "tsdx lint",
@@ -61,6 +62,7 @@
   "dependencies": {
     "axios": "^1.4.0",
     "crypto-js": "^4.1.1",
+    "dot-config-next": "^1.0.0",
     "fs-extra": "^11.1.1",
     "lodash": "^4.17.21"
   },
