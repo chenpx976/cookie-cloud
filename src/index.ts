@@ -1,7 +1,6 @@
 import axios from 'axios';
 import * as CryptoJS from 'crypto-js';
 import * as _ from 'lodash';
-import ConfigManger from 'dot-config-next';
 
 interface Payload {
   uuid?: string;
@@ -37,23 +36,15 @@ interface DecryptedData {
 }
 
 class CookieManager {
-  private configManager?: ConfigManger;
-  private get config(): Payload {
-    return {
-      refreshInterval: 1000 * 60 * 10,
-      endpoint: 'http://127.0.0.1:8088',
-      ...(this.configManager?.readConfig() || {}),
-    };
-  }
+  private config: Payload = {
+    refreshInterval: 1000 * 60 * 10,
+    endpoint: 'http://127.0.0.1:8088',
+    cookie_data: {},
+    lastUpdateTime: 0,
+  };
+
   constructor(payload: Payload) {
-    const configManager = new ConfigManger('cookie-cloud', {
-      uuid: '',
-      refreshInterval: 1000 * 60 * 10,
-      cookie_data: {},
-      lastUpdateTime: 0,
-    });
-    this.configManager = configManager;
-    this.configManager.updateConfig(payload);
+    this.config = { ...this.config, ...payload };
     if (!this.config?.uuid) {
       throw Error('uuid is required');
     }
@@ -93,10 +84,8 @@ class CookieManager {
     const encrypted = response.data.encrypted;
     const decrypted = await this.cookieDecrypt(uuid, encrypted, password);
     // 更新 cookie_data
-    this.configManager?.updateConfig({
-      cookie_data: decrypted.cookie_data,
-      lastUpdateTime: new Date().getTime(),
-    });
+    this.config.cookie_data = decrypted.cookie_data;
+    this.config.lastUpdateTime = new Date().getTime();
     return decrypted;
   }
 
