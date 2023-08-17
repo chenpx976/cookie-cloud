@@ -1,17 +1,7 @@
 {
+  "name": "cookie-cloud",
   "version": "1.5.0",
   "license": "MIT",
-  "typings": "dist/index.d.ts",
-  "files": [
-    "dist",
-    "src"
-  ],
-  "bin": {
-    "cookie-cloud": "bin/index.js"
-  },
-  "engines": {
-    "node": ">=10"
-  },
   "main": "dist/cjs/index.js",
   "types": "dist/cjs/index.d.ts",
   "scripts": {
@@ -19,6 +9,13 @@
     "build": "father build",
     "build:deps": "father prebundle",
     "prepublishOnly": "father doctor && npm run build"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "bin": {
+    "cookie-cloud": "bin/index.js"
   },
   "peerDependencies": {},
   "husky": {
@@ -32,9 +29,7 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "name": "cookie-cloud",
   "author": "chenpx976",
-  "module": "dist/cookie-cloud.esm.js",
   "size-limit": [
     {
       "path": "dist/cookie-cloud.cjs.production.min.js",
