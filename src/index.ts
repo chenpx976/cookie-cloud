@@ -35,6 +35,11 @@ interface DecryptedData {
   local_storage_data: string;
 }
 
+interface ICookieData {
+  cookie_data_str: string;
+  cookie_data: CookiesData;
+}
+
 export class CookieManager {
   private config: Payload = {
     refreshInterval: 1000 * 60 * 10,
@@ -89,7 +94,7 @@ export class CookieManager {
     return decrypted;
   }
 
-  async getCookes(domain = '', refresh = true): Promise<any> {
+  async getCookes(domain = '', refresh = true): Promise<ICookieData> {
     if (!domain) {
       throw Error('domain is required');
     }
