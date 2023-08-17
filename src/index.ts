@@ -40,7 +40,7 @@ interface ICookieData {
   cookie_data: CookiesData;
 }
 
-export class CookieManager {
+class CookieManager {
   private config: Payload = {
     refreshInterval: 1000 * 60 * 10,
     endpoint: 'http://127.0.0.1:8088',
