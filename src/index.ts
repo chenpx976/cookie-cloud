@@ -94,35 +94,53 @@ class CookieManager {
     return decrypted;
   }
 
-  async getCookes(domain = '', refresh = true): Promise<ICookieData> {
+  async getCookes(
+    domain = '',
+    filterKeys = 'ALL',
+    refresh = true
+  ): Promise<ICookieData> {
     if (!domain) {
       throw Error('domain is required');
     }
     const { cookie_data }: any = await this.downloadCookie(refresh);
     // 处理 cookie_data 数据, 生成 cookie 字符串, 用于设置 cookie
-    const cookie_data_str = Object.keys(cookie_data)
-      .map((domainKey): string => {
-        const cookies = cookie_data[domainKey];
-        // 如果 cookies 中的 name 有重复的, 优先判断重复的里面有没有 domain 是 domain 的 否则保留第一个
-        const cookieGroup = _.groupBy(_.orderBy(cookies, 'name'), 'name');
-        return Object.keys(cookieGroup)
-          .map(cookieNameKey => {
-            const cookieItemArr = cookieGroup[cookieNameKey];
-            let cookieItem = cookieItemArr[0];
-            if (cookieItemArr.length > 1) {
-              cookieItem =
-                cookieItemArr.find(item => item.domain === domain) ||
-                cookieItem;
-            }
-            return cookieItem;
-          })
-          .map((cookie: { name: any; value: any }) => {
-            const { name, value } = cookie;
-            return `${name}=${value}`;
-          })
-          .join('; ');
+    let cookieData: any = Object.keys(cookie_data).map((domainKey): any => {
+      const cookies = cookie_data[domainKey];
+      // 如果 cookies 中的 name 有重复的, 优先判断重复的里面有没有 domain 是 domain 的 否则保留第一个
+      const cookieGroup = _.groupBy(_.orderBy(cookies, 'name'), 'name');
+      return Object.keys(cookieGroup)
+        .map((cookieNameKey) => {
+          const cookieItemArr = cookieGroup[cookieNameKey];
+          let cookieItem = cookieItemArr[0];
+          if (cookieItemArr.length > 1) {
+            cookieItem =
+              cookieItemArr.find((item) => item.domain === domain) ||
+              cookieItem;
+          }
+          return cookieItem;
+        })
+        .map((cookie: { name: any; value: any }) => {
+          const { name, value } = cookie;
+          return {
+            name,
+            value,
+          };
+        });
+    });
+    // 压平
+    cookieData = _.flattenDeep(cookieData);
+    // name 去重
+    cookieData = _.uniqBy(cookieData, 'name');
+    // 选择用户需要的 name
+    if (filterKeys !== 'ALL') {
+      cookieData = _.filter(cookieData, (obj) => filterKeys.includes(obj.name));
+    }
+    // 拼接 cookie str
+    const cookie_data_str = cookieData
+      .map((item: any) => {
+        return `${item.name}=${item.value};`;
       })
-      .join('; ');
+      .join(' ');
     return { cookie_data_str, cookie_data };
   }
 
